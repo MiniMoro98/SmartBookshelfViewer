@@ -1,0 +1,5 @@
+# Scegli come visualizzare le informazioni dei libri.
+# Opzioni valide: hologram, actionbar, chat
+
+output_type: "hologram"
+

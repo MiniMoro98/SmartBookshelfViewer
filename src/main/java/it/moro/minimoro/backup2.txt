@@ -1,0 +1,206 @@
+package it.moro.minimoro;
+
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Bukkit;
+import org.bukkit.FluidCollisionMode;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.ChiseledBookshelf;
+import org.bukkit.block.data.Directional;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Player;
+import org.bukkit.event.Listener;
+import org.bukkit.inventory.ChiseledBookshelfInventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BookMeta;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.RayTraceResult;
+import org.bukkit.util.Vector;
+
+import java.util.Map;
+
+public class Events implements Listener {
+    private static ChiseledBookshelfViewer plugin;
+    private BukkitTask bookshelfTask;
+
+    public Events(ChiseledBookshelfViewer plugin) {
+        Events.plugin = plugin;
+    }
+
+    void startBookshelfScanner() {
+        bookshelfTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Player player : Bukkit.getOnlinePlayers()) {
+
+                    RayTraceResult rayResult = player.rayTraceBlocks(6.0, FluidCollisionMode.NEVER);
+
+                    if (rayResult == null || rayResult.getHitBlock() == null) {
+                        clearActionBar(player);
+                        continue;
+                    }
+
+                    Block target = rayResult.getHitBlock();
+
+                    if (!(target.getState() instanceof ChiseledBookshelf bookshelf)) {
+                        clearActionBar(player);
+                        continue;
+                    }
+
+                    BlockFace hitFace = rayResult.getHitBlockFace();
+                    Directional directional = (Directional) target.getBlockData();
+
+                    // Verifica faccia frontale
+                    if (hitFace != directional.getFacing()) {
+                        clearActionBar(player);
+                        continue;
+                    }
+
+                    int zone = getTargetedZone(target, rayResult);
+
+                    if (zone == -1) {
+                        clearActionBar(player);
+                        continue;
+                    }
+
+                    ChiseledBookshelfInventory inventory = bookshelf.getInventory();
+                    ItemStack item = inventory.getItem(zone);
+
+                    if (item == null || item.getType() == Material.AIR) {
+                        sendActionBar(player, "§cSlot " + zone + ": §7Vuoto");
+                        continue;
+                    }
+
+                    String itemName = "Libro"; // Nome di base
+
+                    // 1. Controllo se è un libro scritto con titolo
+                    if (item.getItemMeta() instanceof BookMeta bookMeta && bookMeta.hasTitle()) {
+                        itemName = "§6" + bookMeta.getTitle();
+                    }
+                    // 2. Controllo se è un LIBRO INCANTATO
+                    else if (item.getType() == Material.ENCHANTED_BOOK && item.getItemMeta() instanceof EnchantmentStorageMeta enchMeta) {
+
+                        Map<Enchantment, Integer> enchants = enchMeta.getStoredEnchants();
+
+                        if (!enchants.isEmpty()) {
+                            StringBuilder enchString = new StringBuilder("§b");
+                            for (Map.Entry<Enchantment, Integer> entry : enchants.entrySet()) {
+                                // Ricaviamo il nome pulito dell'incantesimo e il livello
+                                String enchName = formatEnchantmentName(entry.getKey().getKey().getKey());
+                                String level = toRoman(entry.getValue());
+
+                                enchString.append(enchName).append(" ").append(level).append(", ");
+                            }
+                            // Rimuoviamo l'ultima virgola e lo spazio (", ")
+                            enchString.setLength(enchString.length() - 2);
+                            itemName = enchString.toString();
+                        } else {
+                            itemName = "§bLibro Incantato (Vuoto)";
+                        }
+                    }
+                    // 3. Controllo se è stato rinominato con l'incudine
+                    else if (item.getItemMeta() != null && item.getItemMeta().hasDisplayName()) {
+                        itemName = item.getItemMeta().getDisplayName();
+                    }
+
+                    sendActionBar(player, "§aSlot " + zone + ": " + itemName);
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 2L);
+    }
+
+    private int getTargetedZone(Block block, RayTraceResult rayResult) {
+        BlockFace hitFace = rayResult.getHitBlockFace();
+        if (hitFace == BlockFace.UP || hitFace == BlockFace.DOWN) return -1;
+
+        Vector hitPos = rayResult.getHitPosition();
+        double relativeX = hitPos.getX() - block.getX();
+        double relativeY = hitPos.getY() - block.getY();
+        double relativeZ = hitPos.getZ() - block.getZ();
+
+        boolean isTopRow = relativeY > 0.5;
+        int column = 0;
+
+        switch (hitFace) {
+            case NORTH:
+                if (relativeX > 0.66) column = 0;
+                else if (relativeX > 0.33) column = 1;
+                else column = 2;
+                break;
+            case SOUTH:
+                if (relativeX < 0.33) column = 0;
+                else if (relativeX < 0.66) column = 1;
+                else column = 2;
+                break;
+            case WEST:
+                if (relativeZ < 0.33) column = 0;
+                else if (relativeZ < 0.66) column = 1;
+                else column = 2;
+                break;
+            case EAST:
+                if (relativeZ > 0.66) column = 0;
+                else if (relativeZ > 0.33) column = 1;
+                else column = 2;
+                break;
+            default:
+                return -1;
+        }
+
+        return (isTopRow ? 0 : 3) + column;
+    }
+
+    private void sendActionBar(Player player, String message) {
+        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
+    }
+
+    private void clearActionBar(Player player) {
+        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(""));
+    }
+
+    void stopBookshelfScanner() {
+        if (bookshelfTask != null && !bookshelfTask.isCancelled()) {
+            bookshelfTask.cancel();
+            bookshelfTask = null;
+        }
+    }
+
+    // --- METODI DI SUPPORTO PER LA FORMATTAZIONE ---
+
+    /**
+     * Trasforma "fire_aspect" in "Fire Aspect"
+     */
+    private String formatEnchantmentName(String rawName) {
+        String[] words = rawName.split("_");
+        StringBuilder formatted = new StringBuilder();
+        for (String word : words) {
+            if (word.isEmpty()) continue;
+            formatted.append(Character.toUpperCase(word.charAt(0)))
+                    .append(word.substring(1).toLowerCase())
+                    .append(" ");
+        }
+        return formatted.toString().trim();
+    }
+
+    /**
+     * Trasforma i numeri da 1 a 10 in numeri romani
+     */
+    private String toRoman(int number) {
+        return switch (number) {
+            case 1 -> "I";
+            case 2 -> "II";
+            case 3 -> "III";
+            case 4 -> "IV";
+            case 5 -> "V";
+            case 6 -> "VI";
+            case 7 -> "VII";
+            case 8 -> "VIII";
+            case 9 -> "IX";
+            case 10 -> "X";
+            default -> String.valueOf(number); // Se supera il 10, usa i numeri normali
+        };
+    }
+}

@@ -1,0 +1,5 @@
+name: ChiseledBookshelfViewer
+version: '1.0.0'
+
+main: it.moro.minimoro.ChiseledBookshelfViewer
+api-version: '1.21'
