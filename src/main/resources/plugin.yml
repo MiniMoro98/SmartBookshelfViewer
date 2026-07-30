@@ -1,5 +1,14 @@
 name: ChiseledBookshelfViewer
 version: '${version}'
-
+author: MiniMoro
 main: it.moro.minimoro.ChiseledBookshelfViewer
 api-version: '1.21'
+
+commands:
+  bookshelf:
+    description: Main command
+
+permissions:
+  bookshelf.reload:
+    description: Permission to reload configuration
+    default: op

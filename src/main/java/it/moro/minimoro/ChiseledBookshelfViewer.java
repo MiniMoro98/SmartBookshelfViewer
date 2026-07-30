@@ -4,6 +4,7 @@ import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.Objects;
 
 public final class ChiseledBookshelfViewer extends JavaPlugin {
     private Events events;
@@ -15,8 +16,10 @@ public final class ChiseledBookshelfViewer extends JavaPlugin {
         instance = this;
         generateResource();
         events = new Events(this);
+        events.initializConfig();
         getServer().getPluginManager().registerEvents(events, this);
         events.startBookshelfScanner();
+        Objects.requireNonNull(getCommand("bookshelf")).setExecutor(events);
         getLogger().info("Chiseled Bookshelf Viewer plugin enabled!");
     }
 

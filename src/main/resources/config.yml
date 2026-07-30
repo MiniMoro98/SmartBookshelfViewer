@@ -1,5 +1,69 @@
-# Scegli come visualizzare le informazioni dei libri.
-# Opzioni valide: hologram, actionbar, chat
+# Choose how to display book information.
+# Valid options: actionbar, hologram, chat
+output_type: hologram
 
-output_type: "hologram"
+# Choose whether to get the levels in Roman format
+# or in numeric format
+# Valid options: roman, numeric
+enchant-level-format: roman
 
+displayed-text: "&eEnchanted Book"
+enchantments: "&7%enchant%"
+
+hologram:
+  holohram-distance-block: 0.9
+  hologram-height-block: 0.5
+
+books-name:
+  book: "&fBook"
+  knowledge-book: "&dKnowledge Book"
+  writable-book: "&fBook and Quill"
+  enchanted-book: "&eEnchanted Book"
+# It takes the name given to the book at the time of signing
+# written_book: "&6%customName%"
+  written_book: "&fWritten Book"
+
+enchants-name:
+  aqua_affinity: "Aqua Affinity"
+  bane_of_arthropods: "Bane of Arthropods"
+  binding_curse: "Curse of Binding"
+  vanishing_curse: "Curse of Vanishing"
+  blast_protection: "Blast Protection"
+  breach: "Breach"
+  channeling: "Channeling"
+  density: "Density"
+  depth_strider: "Depth Strider"
+  efficiency: "Efficiency"
+  feather_falling: "Feather Falling"
+  fire_aspect: "Fire Aspect"
+  fire_protection: "Fire Protection"
+  flame: "Flame"
+  fortune: "Fortune"
+  frost_walker: "Frost Walker"
+  impaling: "Impaling"
+  infinity: "Infinity"
+  knockback: "Knockback"
+  looting: "Looting"
+  loyalty: "Loyalty"
+  luck_of_the_sea: "Luck of the Sea"
+  lure: "Lure"
+  lunge: "Lunge"
+  mending: "Mending"
+  multishot: "Multishot"
+  piercing: "Piercing"
+  power: "Power"
+  projectile_protection: "Projectile Protection"
+  protection: "Protection"
+  punch: "Punch"
+  quick_charge: "Quick Charge"
+  respiration: "Respiration"
+  riptide: "Riptide"
+  sharpness: "Sharpness"
+  silk_touch: "Silk Touch"
+  smite: "Smite"
+  soul_speed: "Soul Speed"
+  sweeping_edge: "Sweeping Edge"
+  swift_sneak: "Swift Sneak"
+  thorns: "Thorns"
+  unbreaking: "Unbreaking"
+  wind_burst: "Wind Burst"
