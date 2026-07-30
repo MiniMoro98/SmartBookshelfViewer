@@ -8,10 +8,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.ChiseledBookshelf;
 import org.bukkit.block.data.Directional;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.command.*;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Display;
@@ -28,14 +25,10 @@ import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.awt.*;
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
-public class Events implements Listener, CommandExecutor {
+public class Events implements Listener, CommandExecutor, TabCompleter {
     private static ChiseledBookshelfViewer plugin;
     private BukkitTask bookshelfTask;
     private File fileConfig;
@@ -63,6 +56,23 @@ public class Events implements Listener, CommandExecutor {
         return true;
     }
 
+    @Override
+    public List<String> onTabComplete(@NonNull CommandSender sender, @NonNull Command command, @NonNull String label, String @NonNull [] args) {
+        List<String> completions = new ArrayList<>();
+        if (command.getName().equalsIgnoreCase("bookshelf")) {
+            if (args.length == 1) {
+                if (sender instanceof Player player) {
+                    if (player.hasPermission("bookshelf.reload")) {
+                        completions.add("reload");
+                    }
+                } else {
+                    completions.add("reload");
+                }
+            }
+        }
+        return completions;
+    }
+
     void initializConfig() {
         fileConfig = new File(plugin.getDataFolder(), "config.yml");
         config = YamlConfiguration.loadConfiguration(fileConfig);
@@ -78,7 +88,7 @@ public class Events implements Listener, CommandExecutor {
         bookshelfTask = new BukkitRunnable() {
             @Override
             public void run() {
-                String outputType = plugin.getConfig().getString("output_type", "hologram").toLowerCase();
+                String outputType = config.getString("output_type", "hologram").toLowerCase();
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     RayTraceResult rayResult = player.rayTraceBlocks(6.0, FluidCollisionMode.NEVER);
                     if (rayResult == null || rayResult.getHitBlock() == null) {
@@ -126,7 +136,7 @@ public class Events implements Listener, CommandExecutor {
                             for (Map.Entry<Enchantment, Integer> entry : enchants.entrySet()) {
                                 String enchName = string("enchants-name." + entry.getKey().getKey().getKey());
                                 if (enchName.isEmpty()) {
-                                    enchName = entry.getKey().getKey().getKey();
+                                    enchName = formatEnchantmentName(entry.getKey().getKey().getKey());
                                 }
                                 String level = toRoman(entry.getValue());
                                 String format = string("enchantments").replace("%enchant%", enchName + " " + level);

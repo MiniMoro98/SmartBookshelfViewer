@@ -7,13 +7,16 @@ output_type: hologram
 # Valid options: roman, numeric
 enchant-level-format: roman
 
+# Text customization
 displayed-text: "&eEnchanted Book"
 enchantments: "&7%enchant%"
 
+# Hologram Settings
 hologram:
   holohram-distance-block: 0.9
   hologram-height-block: 0.5
 
+# Texts dedicated to translations
 books-name:
   book: "&fBook"
   knowledge-book: "&dKnowledge Book"
@@ -23,6 +26,7 @@ books-name:
 # written_book: "&6%customName%"
   written_book: "&fWritten Book"
 
+# Texts dedicated to translations
 enchants-name:
   aqua_affinity: "Aqua Affinity"
   bane_of_arthropods: "Bane of Arthropods"
