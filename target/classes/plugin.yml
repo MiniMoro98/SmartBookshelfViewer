@@ -1,4 +1,4 @@
-name: ChiseledBookshelfViewer
+name: SmartBookshelfViewer
 version: '1.0.0'
 author: MiniMoro
 main: it.moro.minimoro.ChiseledBookshelfViewer
@@ -9,6 +9,6 @@ commands:
     description: Main command
 
 permissions:
-  bookshelf.reload:
+  smartbookshelf.reload:
     description: Permission to reload configuration
     default: op

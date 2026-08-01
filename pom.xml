@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>it.moro.minimoro</groupId>
-    <artifactId>ChiseledBookshelfViewer</artifactId>
+    <artifactId>SmartBookshelfViewer</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>ChiseledBookshelfViewer</name>
+    <name>SmartBookshelfViewer</name>
 
     <properties>
         <java.version>21</java.version>

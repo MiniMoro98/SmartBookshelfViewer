@@ -44,12 +44,12 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
     public boolean onCommand(@NonNull CommandSender sender, Command command, @NonNull String label, String @NonNull [] args) {
         if (!command.getName().equalsIgnoreCase("bookshelf")) return false;
         if (args[0].equalsIgnoreCase("reload")) {
-            if (sender.hasPermission("bookshelf.reload")) {
+            if (sender.hasPermission("smartbookshelf.reload")) {
                 reloadConfig();
                 if (sender instanceof Player player) {
                     player.sendMessage("§aConfiguration reloaded!");
                 } else if (sender instanceof ConsoleCommandSender) {
-                    plugin.getLogger().info("§aConfiguration reloaded!");
+                    plugin.getLogger().info("\u001B[32mConfiguration reloaded!\u001B[0m");
                 }
             }
         }
@@ -62,7 +62,7 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
         if (command.getName().equalsIgnoreCase("bookshelf")) {
             if (args.length == 1) {
                 if (sender instanceof Player player) {
-                    if (player.hasPermission("bookshelf.reload")) {
+                    if (player.hasPermission("smartbookshelf.reload")) {
                         completions.add("reload");
                     }
                 } else {
