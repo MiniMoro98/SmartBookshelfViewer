@@ -1,5 +1,5 @@
 name: SmartBookshelfViewer
-version: '1.0.0'
+version: '1.0.1'
 author: MiniMoro
 main: it.moro.minimoro.ChiseledBookshelfViewer
 api-version: '1.21'
@@ -9,6 +9,22 @@ commands:
     description: Main command
 
 permissions:
+  smartbookshelf.*:
+    description: Gives access to all SmartBookshelfViewer permissions
+    default: op
+    children:
+      smartbookshelf.reload: true
+      smartbookshelf.setmode: true
+      smartbookshelf.use: true
+
   smartbookshelf.reload:
     description: Permission to reload configuration
-    default: op
+    default: false
+
+  smartbookshelf.setmode:
+    description: Permission to change output mode
+    default: false
+
+  smartbookshelf.use:
+    description: Permission to use the plugin
+    default: true

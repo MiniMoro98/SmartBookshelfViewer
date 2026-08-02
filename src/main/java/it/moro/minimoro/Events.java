@@ -14,7 +14,9 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ChiseledBookshelfInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
@@ -26,6 +28,10 @@ import org.bukkit.util.Vector;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class Events implements Listener, CommandExecutor, TabCompleter {
@@ -43,13 +49,52 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(@NonNull CommandSender sender, Command command, @NonNull String label, String @NonNull [] args) {
         if (!command.getName().equalsIgnoreCase("bookshelf")) return false;
+        if (args.length == 0) return true;
         if (args[0].equalsIgnoreCase("reload")) {
             if (sender.hasPermission("smartbookshelf.reload")) {
                 reloadConfig();
                 if (sender instanceof Player player) {
-                    player.sendMessage("§aConfiguration reloaded!");
+                    player.sendMessage("§a[SmartBookshelfViewer] Configuration reloaded!");
                 } else if (sender instanceof ConsoleCommandSender) {
                     plugin.getLogger().info("\u001B[32mConfiguration reloaded!\u001B[0m");
+                }
+            }
+        } else if (args[0].equalsIgnoreCase("setmode") && args.length == 2) {
+            if (sender.hasPermission("smartbookshelf.setmode")) {
+                String mode = args[1];
+                if (mode.equalsIgnoreCase("chat") || mode.equalsIgnoreCase("actionbar") || mode.equalsIgnoreCase("hologram")) {
+                    config.set("output_type", mode);
+                    saveConfig("Output mode set to " + mode + ".", "Failed to save config.", sender);
+                } else {
+                    if (sender instanceof Player) {
+                        sender.sendMessage("§e[SmartBookshelfViewer] Unrecognized mode '" + mode + "'.");
+                    } else if (sender instanceof ConsoleCommandSender) {
+                        plugin.getLogger().info("Unrecognized mode '" + mode + "'.");
+                    }
+                }
+            }
+        } else if (args[0].equalsIgnoreCase("settings")) {
+            if (sender.hasPermission("smartbookshelf.settings")) {
+                if (args.length == 3) {
+                    if (isNumber(args[2])) {
+                        double val = Double.parseDouble(args[2]);
+                        if (args[1].equalsIgnoreCase("set-hologram-distance")) {
+                            config.set("hologram.hologram-distance-block", val);
+                            saveConfig("Hologram distance set to " + val + ".", "Failed to save config.", sender);
+                        } else if (args[1].equalsIgnoreCase("set-hologram-height")) {
+                            config.set("hologram.hologram-height-block", val);
+                            saveConfig("Hologram height set to " + val + ".", "Failed to save config.", sender);
+                        } else if (args[1].equalsIgnoreCase("player-max-distance")) {
+                            config.set("player-max-distance", val);
+                            saveConfig("Player max distance set to " + val + ".", "Failed to save config.", sender);
+                        }
+                    } else {
+                        String format = args[2].toLowerCase();
+                        if(args[1].equalsIgnoreCase("enchant-level-format")){
+                            config.set("enchant-level-format", format);
+                            saveConfig("Level format to '" + format + "'.", "Failed to save config.", sender);
+                        }
+                    }
                 }
             }
         }
@@ -61,21 +106,121 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
         if (command.getName().equalsIgnoreCase("bookshelf")) {
             if (args.length == 1) {
-                if (sender instanceof Player player) {
-                    if (player.hasPermission("smartbookshelf.reload")) {
-                        completions.add("reload");
-                    }
-                } else {
+                if (sender.hasPermission("smartbookshelf.reload")) {
                     completions.add("reload");
+                }
+                if (sender.hasPermission("smartbookshelf.setmode")) {
+                    completions.add("setmode");
+                }
+                if (sender.hasPermission("smartbookshelf.settings")) {
+                    completions.add("settings");
+                }
+            } else if (args.length == 2) {
+                if (args[0].equalsIgnoreCase("setmode") && sender.hasPermission("smartbookshelf.setmode")) {
+                    completions.add("actionbar");
+                    completions.add("chat");
+                    completions.add("hologram");
+                }
+                if (args[0].equalsIgnoreCase("settings") && sender.hasPermission("smartbookshelf.settings")) {
+                    completions.add("set-hologram-distance");
+                    completions.add("set-hologram-height");
+                    completions.add("enchant-level-format");
+                    completions.add("player-max-distance");
+                }
+            } else if (args.length == 3) {
+                if (args[0].equalsIgnoreCase("settings") && sender.hasPermission("smartbookshelf.settings")) {
+                    if (args[1].equalsIgnoreCase("set-hologram-distance") || args[1].equalsIgnoreCase("set-hologram-height")) {
+                        for (double i = 0.5; i <= 1.5; i += 0.1) {
+                            completions.add(String.format(Locale.US, "%.1f", i));
+                        }
+                    } else if (args[1].equalsIgnoreCase("player-max-distance")) {
+                        for (double i = 0.5; i <= 8; i += 0.5) {
+                            completions.add(String.format(Locale.US, "%.1f", i));
+                        }
+                    } else if (args[1].equalsIgnoreCase("enchant-level-format")) {
+                        completions.add("number");
+                        completions.add("roman");
+                    }
                 }
             }
         }
         return completions;
     }
 
-    void initializConfig() {
+    public boolean isNumber(String text) {
+        if (text == null || text.isEmpty()) {
+            return false;
+        }
+        try {
+            Double.parseDouble(text);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    public void saveConfig(String mex, String failed, CommandSender sender) {
+        try {
+            config.save(fileConfig);
+            reloadConfig();
+            if (mex != null) {
+                if (sender instanceof Player) {
+                    sender.sendMessage("§a[SmartBookshelfViewer] " + mex);
+                } else if (sender instanceof ConsoleCommandSender) {
+                    plugin.getLogger().info(mex);
+                }
+            }
+        } catch (IOException e) {
+            e.fillInStackTrace();
+            if (failed != null) {
+                if (sender instanceof Player) {
+                    sender.sendMessage("§c[SmartBookshelfViewer] " + failed);
+                } else if (sender instanceof ConsoleCommandSender) {
+                    plugin.getLogger().warning(failed);
+                }
+            } else {
+                plugin.getLogger().warning("Error saving file!");
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        // Rimuove ologramma, pulisce actionbar e mappa dei puntamenti all'uscita
+        clearOutput(event.getPlayer());
+    }
+
+    void initializeConfig() {
         fileConfig = new File(plugin.getDataFolder(), "config.yml");
         config = YamlConfiguration.loadConfiguration(fileConfig);
+        checkAndFixConfig();
+    }
+
+    private void checkAndFixConfig() {
+        InputStream defaultConfigStream = plugin.getResource("config.yml");
+        if (defaultConfigStream == null) return;
+        YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(
+                new InputStreamReader(defaultConfigStream, StandardCharsets.UTF_8)
+        );
+        boolean updated = false;
+        for (String path : defaultConfig.getKeys(true)) {
+            if (defaultConfig.isConfigurationSection(path)) {
+                continue;
+            }
+            if (!config.contains(path, true)) {
+                config.set(path, defaultConfig.get(path));
+                plugin.getLogger().info("Missing key detected and added: " + path);
+                updated = true;
+            }
+        }
+        if (updated) {
+            try {
+                config.save(fileConfig);
+                plugin.getLogger().info("Successfully updated config.yml file with missing keys!");
+            } catch (IOException e) {
+                plugin.getLogger().warning("Unable to save updated config.yml file: " + e.getMessage());
+            }
+        }
     }
 
     void reloadConfig() {
@@ -90,7 +235,9 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
             public void run() {
                 String outputType = config.getString("output_type", "hologram").toLowerCase();
                 for (Player player : Bukkit.getOnlinePlayers()) {
-                    RayTraceResult rayResult = player.rayTraceBlocks(6.0, FluidCollisionMode.NEVER);
+                    if (!player.hasPermission("smartbookshelf.use")) continue;
+                    double maxDistance = getDouble("player-max-distance",4);
+                    RayTraceResult rayResult = player.rayTraceBlocks(maxDistance, FluidCollisionMode.NEVER);
                     if (rayResult == null || rayResult.getHitBlock() == null) {
                         clearOutput(player);
                         continue;
@@ -121,7 +268,7 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
                         case KNOWLEDGE_BOOK -> string("books-name.knowledge-book");
                         case WRITABLE_BOOK -> string("books-name.writable-book");
                         case ENCHANTED_BOOK -> string("books-name.enchanted-book");
-                        case WRITTEN_BOOK -> string("books-name.written_book");
+                        case WRITTEN_BOOK -> string("books-name.written-book");
                         default -> string("books-name.book");
                     };
                     if (item.getItemMeta() instanceof BookMeta bookMeta && bookMeta.hasTitle()) {
@@ -172,7 +319,7 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
                             double height = getDouble("hologram.hologram-height-block", 0.5);
                             Location holoLoc = target.getLocation().add(0.5, height, 0.5);
                             Vector frontDirection = hitFace.getDirection();
-                            double distance = getDouble("hologram.holohram-distance-block", 0.9);
+                            double distance = getDouble("hologram.hologram-distance-block", 0.9);
                             holoLoc.add(frontDirection.multiply(distance));
                             showHologram(player, holoLoc, itemName);
                             break;
@@ -193,7 +340,7 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
 
     private int getTargetedZone(Block block, RayTraceResult rayResult) {
         BlockFace hitFace = rayResult.getHitBlockFace();
-        if (hitFace == BlockFace.UP || hitFace == BlockFace.DOWN) return -1;
+        if (hitFace == null || hitFace == BlockFace.UP || hitFace == BlockFace.DOWN) return -1;
         Vector hitPos = rayResult.getHitPosition();
         double relativeX = hitPos.getX() - block.getX();
         double relativeY = hitPos.getY() - block.getY();
@@ -234,19 +381,22 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
 
     private void showHologram(Player player, Location loc, String text) {
         TextDisplay old = holograms.get(player.getUniqueId());
-        if (old != null) {
+        if (old != null && old.isValid()) {
             old.setText(text);
             if (!old.getLocation().equals(loc)) {
                 old.teleport(loc);
             }
             return;
         }
-        TextDisplay display = Objects.requireNonNull(loc.getWorld()).spawn(loc, TextDisplay.class);
-        display.setText(text);
-        display.setBillboard(Display.Billboard.CENTER);
-        display.setDefaultBackground(false);
-        display.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
-        display.setShadowed(true);
+        TextDisplay display = Objects.requireNonNull(loc.getWorld()).spawn(loc, TextDisplay.class, entity -> {
+            entity.setText(text);
+            entity.setBillboard(Display.Billboard.CENTER);
+            entity.setDefaultBackground(false);
+            entity.setBackgroundColor(Color.fromARGB(0, 0, 0, 0));
+            entity.setShadowed(true);
+            entity.setVisibleByDefault(false);
+        });
+        player.showEntity(plugin, display);
         holograms.put(player.getUniqueId(), display);
     }
 
@@ -321,7 +471,7 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
         if (config.contains(value)) {
             return config.getDouble(value);
         } else {
-            plugin.getLogger().info("Error: The key '" + value + "' was not found in the quests.yml file.");
+            plugin.getLogger().info("Error: The key '" + value + "' was not found in the config.yml file.");
             return def;
         }
     }

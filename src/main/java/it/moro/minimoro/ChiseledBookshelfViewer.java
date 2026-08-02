@@ -16,7 +16,7 @@ public final class ChiseledBookshelfViewer extends JavaPlugin {
         instance = this;
         generateResource();
         events = new Events(this);
-        events.initializConfig();
+        events.initializeConfig();
         getServer().getPluginManager().registerEvents(events, this);
         events.startBookshelfScanner();
         Objects.requireNonNull(getCommand("bookshelf")).setExecutor(events);

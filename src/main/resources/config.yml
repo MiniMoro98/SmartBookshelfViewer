@@ -1,11 +1,15 @@
 # Choose how to display book information.
 # Valid options: actionbar, hologram, chat
-output_type: hologram
+output_type: actionbar
 
 # Choose whether to get the levels in Roman format
 # or in numeric format
 # Valid options: roman, numeric
 enchant-level-format: roman
+
+# Maximum distance of blocks in which book information is displayed
+# The distance also includes the bookshelf block itself, so consider a +1
+player-max-distance: 4
 
 # Text customization
 displayed-text: "&eEnchanted Book"
@@ -13,7 +17,7 @@ enchantments: "&7%enchant%"
 
 # Hologram Settings
 hologram:
-  holohram-distance-block: 0.9
+  hologram-distance-block: 0.9
   hologram-height-block: 0.5
 
 # Texts dedicated to translations
@@ -23,8 +27,8 @@ books-name:
   writable-book: "&fBook and Quill"
   enchanted-book: "&eEnchanted Book"
 # It takes the name given to the book at the time of signing
-# written_book: "&6%customName%"
-  written_book: "&fWritten Book"
+# written-book: "&6%customName%"
+  written-book: "&fWritten Book"
 
 # Texts dedicated to translations
 enchants-name:
