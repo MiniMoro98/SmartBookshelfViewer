@@ -41,6 +41,7 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
     private YamlConfiguration config;
     private final Map<UUID, String> lastTargetMap = new HashMap<>();
     private final Map<UUID, TextDisplay> holograms = new HashMap<>();
+    private final Set<UUID> activeActionBarPlayers = new HashSet<>();
 
     public Events(ChiseledBookshelfViewer plugin) {
         Events.plugin = plugin;
@@ -229,6 +230,12 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
         startBookshelfScanner();
     }
 
+    private void clearActionBarIfActive(Player player) {
+        if (activeActionBarPlayers.remove(player.getUniqueId())) {
+            clearActionBar(player);
+        }
+    }
+
     void startBookshelfScanner() {
         bookshelfTask = new BukkitRunnable() {
             @Override
@@ -304,10 +311,11 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
                         case "actionbar":
                             removeHologram(player);
                             sendActionBar(player, itemName.replace("\n", " §8| "));
+                            activeActionBarPlayers.add(player.getUniqueId());
                             break;
                         case "chat":
                             removeHologram(player);
-                            clearActionBar(player);
+                            clearActionBarIfActive(player);
                             if (!currentTargetID.equals(lastTargetMap.get(player.getUniqueId()))) {
                                 player.sendMessage(itemName.replace("\n", " §8| "));
                                 lastTargetMap.put(player.getUniqueId(), currentTargetID);
@@ -315,7 +323,7 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
                             break;
                         case "hologram":
                         default:
-                            clearActionBar(player);
+                            clearActionBarIfActive(player);
                             double height = getDouble("hologram.hologram-height-block", 0.5);
                             Location holoLoc = target.getLocation().add(0.5, height, 0.5);
                             Vector frontDirection = hitFace.getDirection();
@@ -334,7 +342,7 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
 
     private void clearOutput(Player player) {
         removeHologram(player);
-        clearActionBar(player);
+        clearActionBarIfActive(player);
         lastTargetMap.remove(player.getUniqueId());
     }
 
@@ -424,6 +432,7 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
             }
             holograms.clear();
             lastTargetMap.clear();
+            activeActionBarPlayers.clear();
         }
     }
 
