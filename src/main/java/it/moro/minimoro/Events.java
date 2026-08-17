@@ -293,7 +293,12 @@ public class Events implements Listener, CommandExecutor, TabCompleter {
                                     enchName = formatEnchantmentName(entry.getKey().getKey().getKey());
                                 }
                                 String level = toRoman(entry.getValue());
-                                String format = string("enchantments").replace("%enchant%", enchName + " " + level);
+                                String format;
+                                if(entry.getValue() == 1){
+                                    format = string("enchantments").replace("%enchant%", enchName);
+                                } else {
+                                    format = string("enchantments").replace("%enchant%", enchName + " " + level);
+                                }
                                 String enchComp = format + "\n";
                                 enchString.append(enchComp);
                             }
